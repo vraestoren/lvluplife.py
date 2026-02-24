@@ -3,7 +3,8 @@ Mobile-API for [Level Up Life](https://play.google.com/store/apps/details?id=com
 
 ## Example
 ```python3
-import lvluplife
-lvluplife = lvluplife.LvlUpLife()
+from lvluplife import LvlUpLife
+
+lvluplife = LvlUpLife()
 lvluplife.login(username="", password="")
 ```
