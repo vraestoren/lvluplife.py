@@ -1,4 +1,5 @@
 from hashlib import md5
+from base64 import b64encode
 from requests import Session
 from datetime import datetime
 
