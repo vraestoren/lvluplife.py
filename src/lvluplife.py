@@ -1,229 +1,242 @@
-from os import urandom
 from hashlib import md5
+from base64 import b64encode
 from requests import Session
+from datetime import datetime
 
-class FanOfGuns:
-	def __init__(
-			self,
-			sdk: str = "UnitySDK-2.48.180809",
-			app_version: str = "1.1.02",
-			app_sign: str = "20:15:CE:96:C8:CD:B8:59:5E:5D:4A:04:21:79:EC:48") -> None:
-		self.api = "https://f080.playfabapi.com/Client"
+class LvlUpLife:
+	def __init__(self) -> None:
+		self.api = "https://api1.lvluplife.com"
+		self.public_api = "https://lvluplife.com"
 		self.session = Session()
 		self.session.headers = {
-			"User-Agent": "UnityPlayer/2019.4.17f1 (UnityWebRequest/1.0, libcurl/7.52.0-DEV)",
-			"X-PlayFabSdk": "UnitySDK-2.48.180809",
-			"X-Unity-Version": "2019.4.17f1",
-			"Content-Type": "application/json"
+			"User-Agent": "Dalvik/2.1.0 (Linux; U; Android 7.1.2; SM-G9880 Build/RP1A.2007201.01"
 		}
-		self.sdk = sdk
 		self.user_id = None
-		self.title_id = "F080"
-		self.app_sign = app_sign
-		self.session_ticket = None
-		self.app_version = app_version
+		self.login_key = None
+
+	def _get(self, endpoint: str, params: dict = {}) -> dict:
+		return self.session.get(endpoint, params=params).json()
 
 	def _post(self, endpoint: str, data: dict = None) -> dict:
-		return self.session.post(f"{self.api}{endpoint}", json=data).json()
+		return self.session.post(endpoint, data=data).json()
 
-	def generate_device_id(self) -> str:
-		return md5(urandom(15)).hexdigest()
+	def md5_hash(self, string: str) -> str:
+		return md5(string.encode()).hexdigest()
 
-	def register(self) -> dict:
+	def register(
+			self,
+			username: str,
+			password: str) -> dict:
 		data = {
-			"AndroidDeviceId": self.generate_device_id(),
-			"CreateAccount": True,
-			"TitleId": self.title_id,
-			"CustomTags": {
-				"app_version": self.app_version,
-				"app_sign": self.app_sign
-			}
+			"signup_username": username,
+			"signup_pass_encrypted": self.md5_hash(password),
+			"signup_type": "REG"
 		}
 		return self._post(
-			f"/LoginWithAndroidDeviceID?sdk={self.sdk}", data)
+			f"{self.public_api}/app/v5/b_signup.php", data)
 
-	def login_with_session_ticket(
-			self, session_ticket: str) -> str:
-		self.session_ticket = session_ticket
-		self.session.headers["X-Authorization"] = self.session_ticket
-		return self.session_ticket
-		
-	def get_account_info(self, username: str) -> dict:
+	def login(
+			self,
+			username: str,
+			password: str) -> dict:
 		data = {
-			"TitleDisplayName": username
+			"username": username,
+			"password": password
 		}
-		return self._post(f"/GetAccountInfo?sdk={self.sdk}", data)
+		response = self._post(
+			f"{self.api}/app/v5/a_login.php", data)
+		if "loggedinid" in response["login"][0]:
+			self.user_id = response["login"][0]["loggedinid"]
+			self.login_key = response["login"][0]["loginkey"]
+		return response
 
-	def get_player_trades(self, status_filter: str) -> dict:
-		data = {
-			"StatusFilter": status_filter
+	def view_community(self) -> dict:
+		params = {
+			"whoview": "community",
+			"loggedinid": self.user_id
 		}
-		return self._post(f"/GetPlayerTrades?sdk={self.sdk}", data)
+		return self._get(
+			f"{self.public_api}/app/v5/a_activity_2018.php", params)
 
-	def get_inventory(self) -> dict:
-		return self._post(f"/GetUserInventory?sdk={self.sdk}")
+	def get_comments(self, task_id: int) -> dict:
+		params = {
+			"loggedinid": self.user_id,
+			"taskid": task_id
+		}
+		return self._get(
+			f"{self.public_api}/app/v5/a_comments_2018.php", params)
 
-	def update_username(self, username: str) -> dict:
+	def add_comment(
+			self,
+			user_id: int,
+			task_id: int,
+			comment: str) -> dict:
 		data = {
-			"TitleDisplayName": username
+			"whostask": user_id,
+			"loggedinid": self.user_id,
+			"usertaskid": task_id,
+			"comment": comment,
+			"loginkey": self.login_key
 		}
 		return self._post(
-			f"/UpdateUserTitleDisplayName?sdk={self.sdk}", data)
+			f"{self.public_api}/app/v3/b_addcomment.php", data)
 
-	def get_friend_list(
+	def get_profile_info(self, username: str) -> dict:
+		params = {
+			"loggedinid": self.user_id,
+			"profiler": username
+		}
+		return self._get(
+			f"{self.public_api}/app/v5/a_profileinfo_2018.php", params)
+
+	def report_user(
 			self,
-			include_facebook_friends: bool = False,
-			include_steam_friends: bool = False,
-			show_statistics: bool = True,
-			show_locations: bool = False,
-			show_created: bool = True,
-			show_last_login: bool = True,
-			show_avatar_url: bool = True,
-			show_banned_until: bool = True) -> dict:
+			user_id: int,
+			comment: str,
+			reason: int = 1) -> dict:
 		data = {
-			"IncludeFacebookFriends": include_facebook_friends,
-			"IncludeSteamFriends": include_steam_friends,
-			"ProfileConstraints": {
-				"ShowStatistics": show_statistics,
-				"ShowLocations": show_locations,
-				"ShowCreated": show_created,
-				"ShowLastLogin": show_last_login,
-				"ShowAvatarUrl": show_avatar_url,
-				"ShowBannedUntil": show_banned_until
-			}
+			"loggedinid": self.user_id,
+			"whobad": user_id,
+			"reason": reason,
+			"comments": comment
 		}
 		return self._post(
-			f"/GetFriendsList?sdk={self.sdk}", data)
+			f"{self.public_api}/app/v5/b_reportuser.php", data)
 
-	def get_store_items(
-			self,
-			store_id: str = "Store1000",
-			catalog_version: str = None) -> dict:
+	def add_friend(self, user_id: int) -> dict:
 		data = {
-			"CatalogVersion": catalog_version,
-			"StoreId": store_id
-		}
-		return self._post(f"/GetStoreItems?sdk={self.sdk}", data)
-
-	def get_catalog_items(self, catalog_version: str = "Items") -> dict:
-		data = {
-			"CatalogVersion": catalog_version
-		}
-		return self._post(f"/GetCatalogItems?sdk={self.sdk}", data)
-
-	def get_player_statistics(
-			self, 
-			statistic_names: list = ["score"],
-			statistic_name_versions: str = None) -> dict:
-		data = {
-			"StatisticNames": statistic_names,
-			"StatisticNameVersions": statistic_name_versions
+			"loggedinid": self.user_id,
+			"dowhat": "addfriend",
+			"friend": user_id,
+			"loginkey": self.login_key
 		}
 		return self._post(
-			f"/GetPlayerStatistics?sdk={self.sdk}", data)
+			f"{self.public_api}/app/v3/b_friendaction.php", data)
 
-	def get_title_news(self, count: int = 10) -> dict:
+	def remove_friend(self, user_id: int) -> dict:
 		data = {
-			"Count": count
+			"loggedinid": self.user_id,
+			"dowhat": "removefriend",
+			"friend": user_id,
+			"loginkey": self.login_key
 		}
 		return self._post(
-			f"/GetTitleNews?sdk={self.sdk}", data)
+			f"{self.public_api}/app/v3/b_friendaction.php", data)
 
-	def purchase_item(
-			self,
-			item_id: str,
-			price: int,
-			virtual_currency: str,
-			catalog_version: str = None,
-			character_id: str = None,
-			store_id: str = None) -> dict:
-		data = {
-			"CatalogVersion": catalog_version,
-			"CharacterId": character_id,
-			"ItemId": item_id,
-			"Price": price,
-			"StoreId": store_id,
-			"VirtualCurrency": virtual_currency
+	def get_user_activity(self, username: str) -> dict:
+		params = {
+			"whoview": "me",
+			"loggedinid": self.user_id,
+			"profiler": username
 		}
-		return self._post(f"/PurchaseItem?sdk={self.sdk}", data)
+		return self._get(
+			f"{self.public_api}/app/v5/a_activity_2018.php", params)
 
-	def unlock_container_instance(
-			self,
-			item_instance_id: str,
-			catalog_version: str = "Items",
-			character_id: str = None,
-			key_item_instance_id: str = None) -> dict:
+	def get_friends(self) -> dict:
+		params = {
+			"loggedinid": self.user_id
+		}
+		return self._get(
+			f"{self.api}/app/v5/a_friends.php", params)
+
+	def search_friend(self, username: str) -> dict:
+		params = {
+			"loggedinid": self.user_id,
+			"friendsearch": username
+		}
+		return self._get(
+			f"{self.api}/app/v5/a_friends.php", params)
+
+	def get_high_scores(self) -> dict:
+		params = {
+			"loggedinid": self.user_id
+		}
+		return self._get(
+			f"{self.public_api}/app/v5/a_highscores_2018.php", params)
+
+	def set_goal(self, task_number: int, remove: str = "no") -> dict:
 		data = {
-			"CatalogVersion": catalog_version,
-			"CharacterId": character_id,
-			"ContainerItemInstanceId": item_instance_id,
-			"KeyItemInstanceId": key_item_instance_id
+			"loggedinid": self.user_id,
+			"remove": remove,
+			"tasknum": task_number,
+			"loginkey": self.login_key
 		}
 		return self._post(
-			f"/UnlockContainerInstance?sdk={self.sdk}", data)
+			f"{self.public_api}/app/v3/b_goalset.php", data)
 
-	def update_user_data(
-			self, 
-			data: dict, 
-			permission: str,
-			keys_to_remove: str = None) -> dict:
-		data = {
-			"Data": data,
-			"KeysToRemove": keys_to_remove,
-			"Permission": permission
-		}
-		return self._post(f"/UpdateUserData?sdk={self.sdk}", data)
-
-	def ch_money(
+	def create_new_task(
 			self,
-			kill: int,
-			kill_knife: int,
-			kill_head: int = 0,
-			dead: int = 0,
-			generate_play_stream_event: bool = False,
-			revision_selection: str = "Live",
-			specific_revision: int = 0) -> dict:
+			description: str,
+			task_number: int,
+			gained_xp: int,
+			cha: int,
+			str: int,
+			cul: int,
+			int: int,
+			env: int,
+			tal: int,
+			rotatedegrees: int = 0,
+			vnum: int = 67) -> dict:
 		data = {
-			"FunctionName": "ch_money",
-			"FunctionParameter": {
-				"kill": kill,
-				"kill_knife": kill_knife,
-				"kill_head": kill_head,
-				"dead": dead
-			},
-			"GeneratePlayStreamEvent": generate_play_stream_event,
-			"RevisionSelection": revision_selection,
-			"SpecificRevision": specific_revision
+			"CHA": cha,
+			"STR": str,
+			"editornew": "new",
+			"tasknum": task_number,
+			"gainedxp": gained_xp,
+			"rotatedegrees": rotatedegrees,
+			"loginkey": self.login_key,
+			"vnum": vnum,
+			"when_edited": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+			"datetime": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+			"CUL": cul,
+			"INT": int,
+			"loggedinid": self.user_id,
+			"newdesc": description,
+			"ENV": env,
+			"TAL": tal
 		}
-		return self._post(f"/ExecuteCloudScript?sdk={self.sdk}", data)
+		return self._post(
+			f"{self.public_api}/app/v5/b_taskeditornew.php", data)
 
-	def add_friend(self, username: str) -> dict:
+	def delete_task(self, task_id: int) -> dict:
 		data = {
-			"FriendTitleDisplayName": username
+			"usertaskid": task_id,
+			"loggedinid": self.user_id,
+			"when_deleted": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+			"loginkey": self.login_key
 		}
-		return self._post(f"/AddFriend?sdk={self.sdk}", data)
+		return self._post(
+			f"{self.public_api}/app/v5/b_deletetask.php", data)
 
-	def remove_friend(
-			self,
-			user_id: str,
-			generate_play_stream_event: bool = False,
-			revision_selection: str = "Live",
-			specific_revision: int = 0) -> dict:
+	def change_profile_image(self, image: str) -> dict:
 		data = {
-			"FunctionName": "friendRemowe1",
-			"FunctionParameter": {
-				"playerId": user_id
-			},
-			"GeneratePlayStreamEvent": generate_play_stream_event,
-			"RevisionSelection": revision_selection,
-			"SpecificRevision": specific_revision
+			"loggedinid": self.user_id,
+			"loginkey": self.login_key,
+			"image": b64encode(open(image, "rb").read()).strip().decode()
 		}
-		return self._post(f"/ExecuteCloudScript?sdk={self.sdk}", data)
+		return self._post(
+			f"{self.public_api}/app/v3/b_profilepic.php", data)
 
-	def update_profile_status(self, status: str) -> dict:
-		data = {
-			"Data": {
-				"status": status
-			}
+	def get_notifications(self) -> dict:
+		params = {
+			"loggedinid": self.user_id
 		}
-		return self._post(f"/UpdateUserData?sdk={self.sdk}", data)
+		return self._get(
+			f"{self.public_api}/app/v5/a_notifications_2018.php", params)
+
+	def change_email(self, email: str) -> dict:
+		data = {
+			"loggedinid": self.user_id,
+			"val": email,
+			"key": "pref_emailset",
+			"loginkey": self.login_key
+		}
+		return self._post(
+			f"{self.public_api}/app/v5/b_settingchange.php", data)
+
+	def reset_password(self, username: str) -> dict:
+		params = {
+			"logininfo": username
+		}
+		return self._get(
+			f"{self.public_api}/app/v5/b_passreset.php", params)
