@@ -15,7 +15,7 @@ class LvlUpLife:
 		self.login_key = None
 
 	def _get(self, endpoint: str, params: dict = {}) -> dict:
-		return self.session.get(endpoint, params=params)
+		return self.session.get(endpoint, params=params).json()
 
 	def _post(self, endpoint: str, data: dict = None) -> dict:
 		return self._post(endpoint, data=data).json()
@@ -33,7 +33,7 @@ class LvlUpLife:
 			"signup_type": "REG"
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_signup.php", data=data).json()
+			f"{self.public_api}/app/v5/b_signup.php", data=data)
 
 	def login(
 			self,
@@ -44,19 +44,27 @@ class LvlUpLife:
 			"password": password
 		}
 		response = self._post(
-			f"{self.api}/app/v5/a_login.php", data=data).json()
+			f"{self.api}/app/v5/a_login.php", data=data)
 		if "loggedinid" in response["login"][0]:
 			self.user_id = response["login"][0]["loggedinid"]
 			self.login_key = response["login"][0]["loginkey"]
 		return response
 
 	def view_community(self) -> dict:
+		params = {
+			"whoview": "community",
+			"loggedinid": self.user_id
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/a_activity_2018.php?whoview=community&loggedinid={self.user_id}").json()
+			f"{self.public_api}/app/v5/a_activity_2018.php", params)
 
 	def get_comments(self, task_id: int) -> dict:
+		params = {
+			"loggedinid": self.user_id,
+			"taskid": task_id
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/a_comments_2018.php?loggedinid={self.user_id}&taskid={task_id}").json()
+			f"{self.public_api}/app/v5/a_comments_2018.php", params)
 
 	def add_comment(
 			self,
@@ -71,11 +79,15 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_addcomment.php", data=data).json()
+			f"{self.public_api}/app/v3/b_addcomment.php", data=data)
 
 	def get_profile_info(self, username: str) -> dict:
+		params = {
+			"loggedinid": self.user_id,
+			"profiler": username
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/a_profileinfo_2018.php?loggedinid={self.user_id}&profiler={username}").json()
+			f"{self.public_api}/app/v5/a_profileinfo_2018.php", params)
 
 	def report_user(
 			self,
@@ -89,7 +101,7 @@ class LvlUpLife:
 			"comments": comment
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_reportuser.php", data=data).json()
+			f"{self.public_api}/app/v5/b_reportuser.php", data=data)
 
 	def add_friend(self, user_id: int) -> dict:
 		data = {
@@ -99,7 +111,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_friendaction.php", data=data).json()
+			f"{self.public_api}/app/v3/b_friendaction.php", data=data)
 
 	def remove_friend(self, user_id: int) -> dict:
 		data = {
@@ -109,23 +121,38 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_friendaction.php", data=data).json()
+			f"{self.public_api}/app/v3/b_friendaction.php", data=data)
 
 	def get_user_activity(self, username: str) -> dict:
+		params = {
+			"whoview": "me",
+			"loggedinid": self.user_id,
+			"profiler": username
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/a_activity_2018.php?whoview=me&loggedinid={self.user_id}&profiler={username}").json()
+			f"{self.public_api}/app/v5/a_activity_2018.php", params)
 
 	def get_friends(self) -> dict:
+		params = {
+			"loggedinid": self.user_id
+		}
 		return self._get(
-			f"{self.api}/app/v5/a_friends.php?loggedinid={self.user_id}").json()
+			f"{self.api}/app/v5/a_friends.php", params)
 
 	def search_friend(self, username: str) -> dict:
+		params = {
+			"loggedinid": self.user_id,
+			"friendsearch": username
+		}
 		return self._get(
-			f"{self.api}/app/v5/a_friends.php?loggedinid={self.user_id}&friendsearch={username}").json()
+			f"{self.api}/app/v5/a_friends.php", params)
 
 	def get_high_scores(self) -> dict:
+		params = {
+			"loggedinid": self.user_id
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/a_highscores_2018.php?loggedinid={self.user_id}").json()
+			f"{self.public_api}/app/v5/a_highscores_2018.php", params)
 
 	def set_goal(self, task_number: int, remove: str = "no") -> dict:
 		data = {
@@ -135,7 +162,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_goalset.php", data=data).json()
+			f"{self.public_api}/app/v3/b_goalset.php", data=data)
 
 	def create_new_task(
 			self,
@@ -169,7 +196,7 @@ class LvlUpLife:
 			"TAL": tal
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_taskeditornew.php", data=data).json()
+			f"{self.public_api}/app/v5/b_taskeditornew.php", data=data)
 
 	def delete_task(self, task_id: int) -> dict:
 		data = {
@@ -179,7 +206,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_deletetask.php", data=data).json()
+			f"{self.public_api}/app/v5/b_deletetask.php", data=data)
 
 	def change_profile_image(self, image: str) -> dict:
 		data = {
@@ -188,11 +215,14 @@ class LvlUpLife:
 			"image": b64encode(open(image, "rb").read()).strip().decode()
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_profilepic.php", data=data).json()
+			f"{self.public_api}/app/v3/b_profilepic.php", data=data)
 
 	def get_notifications(self) -> dict:
+		params = {
+			"loggedinid": self.user_id
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/a_notifications_2018.php?loggedinid={self.user_id}").json()
+			f"{self.public_api}/app/v5/a_notifications_2018.php", params)
 
 	def change_email(self, email: str) -> dict:
 		data = {
@@ -202,8 +232,11 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_settingchange.php", data=data).json()
+			f"{self.public_api}/app/v5/b_settingchange.php", data=data)
 
 	def reset_password(self, username: str) -> dict:
+		params = {
+			"logininfo": username
+		}
 		return self._get(
-			f"{self.public_api}/app/v5/b_passreset.php?logininfo={username}").json()
+			f"{self.public_api}/app/v5/b_passreset.php", params).json()
