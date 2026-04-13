@@ -18,7 +18,7 @@ class LvlUpLife:
 		return self.session.get(endpoint, params=params).json()
 
 	def _post(self, endpoint: str, data: dict = None) -> dict:
-		return self._post(endpoint, data=data).json()
+		return self.session.post(endpoint, data=data).json()
 
 	def md5_hash(self, string: str) -> str:
 		return md5(string.encode()).hexdigest()
