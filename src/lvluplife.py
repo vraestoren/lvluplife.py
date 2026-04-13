@@ -33,7 +33,7 @@ class LvlUpLife:
 			"signup_type": "REG"
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_signup.php", data=data)
+			f"{self.public_api}/app/v5/b_signup.php", data)
 
 	def login(
 			self,
@@ -44,7 +44,7 @@ class LvlUpLife:
 			"password": password
 		}
 		response = self._post(
-			f"{self.api}/app/v5/a_login.php", data=data)
+			f"{self.api}/app/v5/a_login.php", data)
 		if "loggedinid" in response["login"][0]:
 			self.user_id = response["login"][0]["loggedinid"]
 			self.login_key = response["login"][0]["loginkey"]
@@ -79,7 +79,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_addcomment.php", data=data)
+			f"{self.public_api}/app/v3/b_addcomment.php", data)
 
 	def get_profile_info(self, username: str) -> dict:
 		params = {
@@ -101,7 +101,7 @@ class LvlUpLife:
 			"comments": comment
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_reportuser.php", data=data)
+			f"{self.public_api}/app/v5/b_reportuser.php", data)
 
 	def add_friend(self, user_id: int) -> dict:
 		data = {
@@ -111,7 +111,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_friendaction.php", data=data)
+			f"{self.public_api}/app/v3/b_friendaction.php", data)
 
 	def remove_friend(self, user_id: int) -> dict:
 		data = {
@@ -121,7 +121,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_friendaction.php", data=data)
+			f"{self.public_api}/app/v3/b_friendaction.php", data)
 
 	def get_user_activity(self, username: str) -> dict:
 		params = {
@@ -162,7 +162,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_goalset.php", data=data)
+			f"{self.public_api}/app/v3/b_goalset.php", data)
 
 	def create_new_task(
 			self,
@@ -196,7 +196,7 @@ class LvlUpLife:
 			"TAL": tal
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_taskeditornew.php", data=data)
+			f"{self.public_api}/app/v5/b_taskeditornew.php", data)
 
 	def delete_task(self, task_id: int) -> dict:
 		data = {
@@ -206,7 +206,7 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_deletetask.php", data=data)
+			f"{self.public_api}/app/v5/b_deletetask.php", data)
 
 	def change_profile_image(self, image: str) -> dict:
 		data = {
@@ -215,7 +215,7 @@ class LvlUpLife:
 			"image": b64encode(open(image, "rb").read()).strip().decode()
 		}
 		return self._post(
-			f"{self.public_api}/app/v3/b_profilepic.php", data=data)
+			f"{self.public_api}/app/v3/b_profilepic.php", data)
 
 	def get_notifications(self) -> dict:
 		params = {
@@ -232,11 +232,11 @@ class LvlUpLife:
 			"loginkey": self.login_key
 		}
 		return self._post(
-			f"{self.public_api}/app/v5/b_settingchange.php", data=data)
+			f"{self.public_api}/app/v5/b_settingchange.php", data)
 
 	def reset_password(self, username: str) -> dict:
 		params = {
 			"logininfo": username
 		}
 		return self._get(
-			f"{self.public_api}/app/v5/b_passreset.php", params).json()
+			f"{self.public_api}/app/v5/b_passreset.php", params)
